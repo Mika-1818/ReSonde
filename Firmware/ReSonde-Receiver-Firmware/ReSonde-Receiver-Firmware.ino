@@ -79,7 +79,7 @@ void setup() {
 
   //SerialDebug.println("Now setting up Radio");
   radio.setRfSwitchTable(rfswitch_pins, rfswitch_table);
-  int state = radio.begin(434.0, 31.0, 5, 5, RADIOLIB_SX126X_SYNC_WORD_PRIVATE, 10, 8, 3.3, false);
+  int state = radio.begin(434.0, 62.5, 9, 5, RADIOLIB_SX126X_SYNC_WORD_PRIVATE, 10, 8, 3.3, false);
   if (state == RADIOLIB_ERR_NONE) {
     //SerialDebug.println(F("success!"));
   } else {
