@@ -54,7 +54,7 @@ static const Module::RfSwitchMode_t rfswitch_table[] = {
 };
 
 struct __attribute__((packed)) Packet {
-  char SerialNumber[11] = "DL0HAB-001";
+  char SerialNumber[11] = "";
   uint16_t PacketNumber = 0;
   uint8_t hour = 0;
   uint8_t minute = 0;
