@@ -4,6 +4,7 @@
 #include "Radio.h"
 #include <SparkFun_u-blox_GNSS_v3.h>
 #include <SoftwareSerial.h>
+#include "sensors.h"
 
 SoftwareSerial SerialGNSS(PA3, PA2); // Serial for Max M10S
 SFE_UBLOX_GNSS_SERIAL GNSS;
@@ -48,6 +49,7 @@ void fillPacket(){
   packet.eSpeed = round(GNSS.getNedEastVel() / 10); // Getting speed in cm/s
   packet.nSpeed = round(GNSS.getNedNorthVel() / 10);
   packet.sats = GNSS.getSIV();
+  packet.temp = getFormattedTemperature(); // Get temperature from temperature library
   fullPacket = true;
 }
 
@@ -86,6 +88,7 @@ void setup() {
   GNSS.setDynamicModel(DYN_MODEL_AIRBORNE1g);
   GNSS.saveConfiguration();
 
+  SetupTemperature();
   // Setting up the STM32WL Radio
   SetupRadio();
 }
@@ -106,6 +109,5 @@ void loop() {
     fullPacket = false;
     DEBUG_PRINTLN("Attempting to send packet...");
     startTX();
-
   }
 }
