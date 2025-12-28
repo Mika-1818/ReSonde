@@ -89,6 +89,7 @@ void setup() {
   GNSS.saveConfiguration();
 
   SetupTemperature();
+  SetupFrequencyMeasurement();
   // Setting up the STM32WL Radio
   SetupRadio();
 }
