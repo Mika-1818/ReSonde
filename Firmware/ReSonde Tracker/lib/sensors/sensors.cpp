@@ -1,3 +1,5 @@
+#include "debug.h"
+
 
 // ---- temperature measurement ----- //
 
@@ -30,6 +32,8 @@ uint32_t input_freq = 0;
 volatile uint32_t rolloverCompareCount = 0;
 HardwareTimer *MyTim;
 
+bool newFrequency = false;
+
 void InputCapture_IT_callback(void)
 {
   CurrentCapture = MyTim->getCaptureCompare(channel);
@@ -43,6 +47,7 @@ void InputCapture_IT_callback(void)
   }
   LastCapture = CurrentCapture;
   rolloverCompareCount = 0;
+  newFrequency = true;
 }
 
 void Rollover_IT_callback(void)
@@ -71,6 +76,26 @@ void SetupFrequencyMeasurement() {
   input_freq = MyTim->getTimerClkFreq() / MyTim->getPrescaleFactor();
 }
 
+uint16_t sta = 100; //number of samples to average
+uint16_t timeout = 50; //max time it can take to get the number of samples in milliseconds
+
 uint32_t getFrequency() {
-  return FrequencyMeasured;
+  unsigned long startMillis = millis();
+  uint16_t samples = 0;
+  uint32_t frequencyBuffer = 0;
+
+  while(samples < sta and (millis() - startMillis) < timeout) {
+    if(newFrequency) {
+      samples++;
+      newFrequency = false;
+      frequencyBuffer += FrequencyMeasured;
+    }
+  }
+
+  if (samples == sta) {
+    return (frequencyBuffer / sta);
+  } else {
+    DEBUG_PRINTLN("Frequency measurement timeout");
+    return 0; //timeout
+  }
 }
