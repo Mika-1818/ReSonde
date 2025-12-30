@@ -1,5 +1,5 @@
 #include "debug.h"
-
+#include <Arduino.h>
 
 // ---- temperature measurement ----- //
 
@@ -20,7 +20,7 @@ int16_t getFormattedTemperature() {
 
 // ---- battery voltage measurement ----- //
 int8_t getFormattedBattVoltage() {
-  return(map(analogRead(PC0), 0, 4096, 0, 255)); // Read battery voltage on PC0 and convert for packet
+  return(map(analogRead(PB2), 0, 4096, 0, 255)); // Read battery voltage on PC0 and convert for packet
 }
 
 // ---- humidity measurement ----- //
@@ -93,9 +93,51 @@ uint32_t getFrequency() {
   }
 
   if (samples == sta) {
-    return (frequencyBuffer / sta);
+    return(round(frequencyBuffer / sta));
   } else {
     DEBUG_PRINTLN("Frequency measurement timeout");
     return 0; //timeout
+  }
+}
+
+const float C_ref = 107e-12; // capacity of reference capacitor in F including stray capacitance
+const uint32_t R = 220e3; // resistance of resistor in oscillator in ohms
+const float stray_c = 10e-12; // stray capacitance in F
+const uint16_t stab_delay = 5; // delay to allow oscillator to stabilise in ms
+
+const float C0 = 120; // nominal sensor capacitance in pF
+const float HC0 = 3420e-6; // nominal humidity coefficient of capacitance per %RH
+
+float K = 0.0f; // calibration constant determined through calibration with reference C
+float prev_RH = 0.0f; // previous relative humidity value
+
+uint8_t getHumidityFormatted(int16_t temperature) {
+  digitalWrite(PB12, LOW); //make sure the oscillator uses the reference capacitor
+  delay(stab_delay); //let the oscillator stabilise
+  uint32_t f_cal = getFrequency();
+  K = (float)(f_cal / (R * C_ref)); // calculate calibration constant
+
+  // calibration done, now measuring capacity of sensor
+
+  digitalWrite(PB12, HIGH); //switch to sensor
+  delay(stab_delay); //let the oscillator stabilise
+
+  uint32_t f_RH = getFrequency(); // get frequency with RH sensor
+  float C_temp = (float)f_RH / (R * K); // calculate total capacity from frequency
+  float C_RH = C_temp - stray_c; // subtract stray capacitance from total capacity to get sensor capacitance
+  float C_RH_pF = C_RH * 1.0e12; // convert to pF
+
+  // we now have the capacitance of the sensor in pF so we can convert it to relative humidity
+
+  float dC = -0.0014f * prev_RH * ((temperature/320.0f) - 30.0f); // temperature compensation based on last humidity value
+  //now, we can calculate RH from the adjusted capacitance
+  float RH = ((dC * C_RH_pF) - C0) / (C0 * HC0);
+  
+  if(RH < 0.0f) {
+    return(0);
+  } else if (RH > 125.0f) {
+    return(255);
+  } else {
+    return(round(RH*2.0));
   }
 }

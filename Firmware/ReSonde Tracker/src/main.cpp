@@ -49,7 +49,9 @@ void fillPacket(){
   packet.eSpeed = round(GNSS.getNedEastVel() / 10); // Getting speed in cm/s
   packet.nSpeed = round(GNSS.getNedNorthVel() / 10);
   packet.sats = GNSS.getSIV();
-  packet.temp = getFormattedTemperature(); // Get temperature from temperature library
+  packet.temp = getFormattedTemperature(); // Get temperature from sensors library
+  packet.rh = getHumidityFormatted(packet.temp); // Get humidity from sensors library and using previously determined temperature for compensation
+  packet.battery = getFormattedBattVoltage(); // Get battery voltage from sensors library
   fullPacket = true;
 }
 
