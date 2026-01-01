@@ -69,14 +69,31 @@ void updateDisplay() {
   display.setCursor(0,0);
   display.print("SN:   "); display.println(packet.SN);
   display.print("Time: "); display.println(convertTime(packet.time));
-  display.print("Lat:  "); display.println((float)packet.lat * 1e-7);
-  display.print("Lon:  "); display.println((float)packet.lon * 1e-7);
+  display.print("Lat:  "); display.println(String((float)packet.lat * 1e-7, 6));
+  display.print("Lon:  "); display.println(String((float)packet.lon * 1e-7, 6));
   display.print("Alt:  "); display.print(packet.alt * 1e-3); display.println(" m");
   display.print("Sats: "); display.println(packet.sats);
   display.print("Temp: "); display.print(packet.temp * 0.01f); display.println(" C");
   display.print("RH:   "); display.print(packet.rh * 0.5f); display.println(" %");
   display.print("Batt: "); display.print((packet.battery * 3.3f) / 255.0f); display.println(" V");
   display.display();
+}
+
+void printPacket() {
+  Serial.print(packet.SN); Serial.print(", ");
+  Serial.print(packet.counter); Serial.print(", ");
+  Serial.print(packet.time); Serial.print(", ");
+  Serial.print(packet.lat); Serial.print(", ");
+  Serial.print(packet.lon); Serial.print(", ");
+  Serial.print(packet.alt); Serial.print(", ");
+  Serial.print(packet.vSpeed); Serial.print(", ");
+  Serial.print(packet.eSpeed); Serial.print(", ");
+  Serial.print(packet.nSpeed); Serial.print(", ");
+  Serial.print(packet.sats); Serial.print(", ");
+  Serial.print(packet.temp); Serial.print(", ");
+  Serial.print(packet.rh); Serial.print(", ");
+  Serial.print(packet.battery); Serial.print(", ");
+  Serial.println(radio.getRSSI());
 }
 
 void setup() {
@@ -135,13 +152,11 @@ void loop() {
     int state = radio.readData((uint8_t*)&packet, sizeof(packet)); // read data from receiver and put into packet struct
 
     if(state == RADIOLIB_ERR_NONE) {
-      Serial.println("Received packet!");
       digitalWrite(LED, HIGH);
-      delay(50);
+      delay(30);
       digitalWrite(LED, LOW);
-      unsigned long prevTime = millis();
       updateDisplay();
-      Serial.println(millis() - prevTime);
+      printPacket();
     }
   }
 }
