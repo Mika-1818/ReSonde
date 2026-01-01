@@ -3,9 +3,8 @@
 #define SF      9       // Spreading Factor
 #define CR      8       // Coding Rate
 #define SW   RADIOLIB_SX126X_SYNC_WORD_PRIVATE // Sync Word
-#define PL  14      // Preamble length
+#define PL  8      // Preamble length
 #define TX_PWR       14      // Transmission power in dBm
-#define LORA_HEADER    8       // LoRa header length
 
 #define SERIAL_NUMBER 1
 

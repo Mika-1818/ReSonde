@@ -94,6 +94,8 @@ void setup() {
   SetupFrequencyMeasurement();
   // Setting up the STM32WL Radio
   SetupRadio();
+
+  initPacket();
 }
 
 void loop() {

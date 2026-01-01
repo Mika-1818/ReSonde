@@ -9,7 +9,6 @@ static const uint32_t rfswitch_pins[] = {RADIOLIB_NC, RADIOLIB_NC, RADIOLIB_NC, 
 static const Module::RfSwitchMode_t rfswitch_table[] = {
   {STM32WLx::MODE_IDLE,{}},
   {STM32WLx::MODE_RX,{}},
-  {STM32WLx::MODE_TX_LP,{}},
   {STM32WLx::MODE_TX_HP,{}},
   END_OF_MODE_TABLE,
 };

@@ -1,0 +1,147 @@
+#include <Arduino.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <RadioLib.h>
+
+
+// OLED display definitions
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+#define LED 25
+
+#define FREQUENCY           434.0   // MHz
+#define LORA_SPREADING_FACTOR 9
+#define LORA_BANDWIDTH      62.5   // kHz
+#define LORA_CODING_RATE    8       // 4/8
+#define LORA_SYNC_WORD      0x12
+#define TX_POWER            2      // tx power in dBm, neccesary but not relevant
+#define LORA_PREAMBLE_LENGTH 8      // symbols
+
+
+struct __attribute__((packed)) Packet {
+  uint16_t SN;
+  uint16_t counter;
+  uint32_t time;
+  int32_t lat;
+  int32_t lon;
+  int32_t alt;
+  int16_t vSpeed;
+  int16_t eSpeed;
+  int16_t nSpeed;
+  uint8_t sats;
+  int16_t temp;
+  uint8_t rh;
+  uint8_t battery;
+} packet;                                   // Main packet to be received
+
+
+
+SX1278 radio = new Module(18, 26, 23, -1);
+volatile bool receivedFlag = false;
+
+ICACHE_RAM_ATTR
+void setFlag(void) {
+  // set received flag after packet has been received
+  receivedFlag = true;
+}
+
+String convertTime(unsigned long in_time) { //function to convert unix time to string
+  unsigned long secondsInDay = in_time % 86400UL;
+
+  int hours   = secondsInDay / 3600;
+  int minutes = (secondsInDay % 3600) / 60;
+  int seconds = secondsInDay % 60;
+
+  char buffer[9];
+  snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d", hours, minutes, seconds);
+  return(buffer);
+}
+
+
+void updateDisplay() {
+  // Function to update the OLED display with received data
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.print("SN:   "); display.println(packet.SN);
+  display.print("Time: "); display.println(convertTime(packet.time));
+  display.print("Lat:  "); display.println((float)packet.lat * 1e-7);
+  display.print("Lon:  "); display.println((float)packet.lon * 1e-7);
+  display.print("Alt:  "); display.print(packet.alt * 1e-3); display.println(" m");
+  display.print("Sats: "); display.println(packet.sats);
+  display.print("Temp: "); display.print(packet.temp * 0.01f); display.println(" C");
+  display.print("RH:   "); display.print(packet.rh * 0.5f); display.println(" %");
+  display.print("Batt: "); display.print((packet.battery * 3.3f) / 255.0f); display.println(" V");
+  display.display();
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(LED, OUTPUT);
+
+  // Setup for OLED
+  Wire.begin(21,22);
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    while(true){ delay(100); };
+  }
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0,0);
+  display.println("ReSonde Receiver");
+  display.display();
+
+
+  // Setup for SX1278 LoRa
+
+  SPI.begin(5,19,27,18); // SCK, MISO, MOSI, SS
+  Serial.print(F("[SX1278] Initializing ... "));
+  int state = radio.begin(FREQUENCY, LORA_BANDWIDTH, LORA_SPREADING_FACTOR, LORA_CODING_RATE, LORA_SYNC_WORD, TX_POWER, LORA_PREAMBLE_LENGTH);
+  if (state == RADIOLIB_ERR_NONE) {
+    Serial.println(F("success!"));
+  } else {
+    Serial.print(F("failed, code "));
+    Serial.println(state);
+    while (true) { delay(10); }
+  }
+
+  radio.setPacketReceivedAction(setFlag);
+
+  Serial.print(F("[SX1278] Starting to listen ... "));
+  state = radio.startReceive();
+  if (state == RADIOLIB_ERR_NONE) {
+    Serial.println(F("success!"));
+    display.println("Receiving!");
+    display.display();
+  } else {
+    Serial.print(F("failed, code "));
+    Serial.println(state);
+    while (true) { delay(10); }
+  }
+
+}
+
+void loop() {
+  if (receivedFlag) {
+    // reset flag
+    receivedFlag = false;
+
+    int state = radio.readData((uint8_t*)&packet, sizeof(packet)); // read data from receiver and put into packet struct
+
+    if(state == RADIOLIB_ERR_NONE) {
+      Serial.println("Received packet!");
+      digitalWrite(LED, HIGH);
+      delay(50);
+      digitalWrite(LED, LOW);
+      unsigned long prevTime = millis();
+      updateDisplay();
+      Serial.println(millis() - prevTime);
+    }
+  }
+}
