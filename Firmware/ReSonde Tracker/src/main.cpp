@@ -41,6 +41,7 @@ void initPacket(){
 
 void fillPacket(){
   packet.counter++;
+  DEBUG_PRINTLN("Filling GPS stuff... ");
   packet.time = GNSS.getUnixEpoch();
   packet.lat = GNSS.getLatitude();
   packet.lon = GNSS.getLongitude();
@@ -49,8 +50,11 @@ void fillPacket(){
   packet.eSpeed = round(GNSS.getNedEastVel() / 10); // Getting speed in cm/s
   packet.nSpeed = round(GNSS.getNedNorthVel() / 10);
   packet.sats = GNSS.getSIV();
+  DEBUG_PRINTLN("Filling temperature");
   packet.temp = getFormattedTemperature(); // Get temperature from sensors library
+  DEBUG_PRINTLN("Filling humidity");
   packet.rh = getHumidityFormatted(packet.temp); // Get humidity from sensors library and using previously determined temperature for compensation
+  DEBUG_PRINTLN("Filling battery voltage");
   packet.battery = getFormattedBattVoltage(); // Get battery voltage from sensors library
   fullPacket = true;
 }

@@ -67,15 +67,17 @@ void updateDisplay() {
   // Function to update the OLED display with received data
   display.clearDisplay();
   display.setCursor(0,0);
-  display.print("SN:   "); display.println(packet.SN);
+  display.print("SN:"); display.print(packet.SN);
+  display.print(" | "); display.println(packet.counter);
   display.print("Time: "); display.println(convertTime(packet.time));
-  display.print("Lat:  "); display.println(String((float)packet.lat * 1e-7, 6));
-  display.print("Lon:  "); display.println(String((float)packet.lon * 1e-7, 6));
-  display.print("Alt:  "); display.print(packet.alt * 1e-3); display.println(" m");
-  display.print("Sats: "); display.println(packet.sats);
-  display.print("Temp: "); display.print(packet.temp * 0.01f); display.println(" C");
-  display.print("RH:   "); display.print(packet.rh * 0.5f); display.println(" %");
+  display.print(String((float)packet.lat * 1e-7, 6));
+  display.print("  "); display.println(String((float)packet.lon * 1e-7, 6));
+  display.print("Alt: "); display.print((int)round(packet.alt * 1e-3)); display.print("m");
+  display.print(" S: "); display.println(packet.sats);
+  display.print("Env: "); display.print(packet.temp / 320.0f); display.print("C");
+  display.print(" | "); display.print(packet.rh * 0.5f); display.println("%");
   display.print("Batt: "); display.print((packet.battery * 3.3f) / 255.0f); display.println(" V");
+  display.print("RSSI: "); display.print(radio.getRSSI()); display.println("dBm");
   display.display();
 }
 

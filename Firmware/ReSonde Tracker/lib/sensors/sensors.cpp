@@ -20,7 +20,7 @@ int16_t getFormattedTemperature() {
 
 // ---- battery voltage measurement ----- //
 int8_t getFormattedBattVoltage() {
-  return(map(analogRead(PB2), 0, 4096, 0, 255)); // Read battery voltage on PC0 and convert for packet
+  return(map(analogRead(PB2), 0, 4096, 0, 255)); // Read battery voltage on PB2 and convert for packet
 }
 
 // ---- humidity measurement ----- //
@@ -54,11 +54,24 @@ void Rollover_IT_callback(void)
 {
   rolloverCompareCount++;
 
-  if (rolloverCompareCount > 1)
-  {
+  if (rolloverCompareCount > 1) {
     FrequencyMeasured = 0;
   }
 
+}
+
+void pauseFrequencyMeasurement() {                            //disable frequency measurement when not needed to save power and cpu cycles
+  if (MyTim == nullptr) return; //check if timer exists
+  MyTim->detachInterrupt(channel);
+  MyTim->detachInterrupt();
+  MyTim->pause();
+}
+
+void enableFrequencyMeasurement() {
+  if (MyTim == nullptr) return; //check if timer exists
+  MyTim->attachInterrupt(channel, InputCapture_IT_callback);
+  MyTim->attachInterrupt(Rollover_IT_callback);
+  MyTim->resume();
 }
 
 void SetupFrequencyMeasurement() {
@@ -74,7 +87,10 @@ void SetupFrequencyMeasurement() {
   MyTim->resume();
 
   input_freq = MyTim->getTimerClkFreq() / MyTim->getPrescaleFactor();
+
+  pauseFrequencyMeasurement();
 }
+
 
 uint16_t sta = 100; //number of samples to average
 uint16_t timeout = 50; //max time it can take to get the number of samples in milliseconds
@@ -112,6 +128,9 @@ float K = 0.0f; // calibration constant determined through calibration with refe
 float prev_RH = 0.0f; // previous relative humidity value
 
 uint8_t getHumidityFormatted(int16_t temperature) {
+
+  enableFrequencyMeasurement();
+
   digitalWrite(PB12, LOW); //make sure the oscillator uses the reference capacitor
   delay(stab_delay); //let the oscillator stabilise
   uint32_t f_cal = getFrequency();
@@ -125,13 +144,16 @@ uint8_t getHumidityFormatted(int16_t temperature) {
   uint32_t f_RH = getFrequency(); // get frequency with RH sensor
   float C_temp = (float)f_RH / (R * K); // calculate total capacity from frequency
   float C_RH = C_temp - stray_c; // subtract stray capacitance from total capacity to get sensor capacitance
-  float C_RH_pF = C_RH * 1.0e12; // convert to pF
+  float C_RH_pF = C_RH * 1.0e12f; // convert to pF
 
   // we now have the capacitance of the sensor in pF so we can convert it to relative humidity
 
-  float dC = -0.0014f * prev_RH * ((temperature/320.0f) - 30.0f); // temperature compensation based on last humidity value
+  float dC = -0.0014f * (1.0e-2f * prev_RH + 1) * ((temperature/320.0f) - 30.0f); // temperature compensation based on last humidity value
   //now, we can calculate RH from the adjusted capacitance
   float RH = ((dC * C_RH_pF) - C0) / (C0 * HC0);
+  
+  digitalWrite(PB12, LOW);
+  pauseFrequencyMeasurement();
   
   if(RH < 0.0f) {
     return(0);
@@ -140,4 +162,5 @@ uint8_t getHumidityFormatted(int16_t temperature) {
   } else {
     return(round(RH*2.0));
   }
+
 }
