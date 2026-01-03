@@ -160,7 +160,7 @@ const uint16_t stab_delay = 5; // delay to allow oscillator to stabilise in ms
 const float C0 = 120;      // nominal sensor capacitance in pF
 const float HC0 = 3420e-6; // nominal humidity coefficient of capacitance per %RH
 
-float K = 0.0f;       // calibration constant determined through calibration with reference C
+//float K = 0.0f;       // calibration constant determined through calibration with reference C - Not used anymore!!!
 float prev_RH = 0.0f; // previous relative humidity value
 
 uint8_t getHumidityFormatted(int16_t temperature)
@@ -171,23 +171,30 @@ uint8_t getHumidityFormatted(int16_t temperature)
   digitalWrite(PB12, LOW); // make sure the oscillator uses the reference capacitor
   delay(stab_delay);       // let the oscillator stabilise
   uint32_t f_cal = getFrequency();
-  K = (float)(f_cal / (R * C_ref)); // calculate calibration constant
-
-  // calibration done, now measuring capacity of sensor
+  
+  if (f_cal == 0)
+  {
+    pauseFrequencyMeasurement();
+    return (255); // frequency measurement failed, return 255 to signal error
+  }
+ 
+  // calibration done, now measuring sensor
 
   digitalWrite(PB12, HIGH); // switch to sensor
   delay(stab_delay);        // let the oscillator stabilise
-
   uint32_t f_RH = getFrequency();       // get frequency with RH sensor
-  float C_temp = (float)f_RH / (R * K); // calculate total capacity from frequency
-  float C_RH = C_temp - stray_c;        // subtract stray capacitance from total capacity to get sensor capacitance
+
+  float C_total_sensor = C_ref * ((float)f_cal / (float)f_RH);
+
+  //float C_temp = (float)f_RH / (R * K); // calculate total capacity from frequency
+  float C_RH = C_total_sensor - stray_c;        // subtract stray capacitance from total capacity to get sensor capacitance
   float C_RH_pF = C_RH * 1.0e12f;       // convert to pF
 
   // we now have the capacitance of the sensor in pF so we can convert it to relative humidity
 
-  float dC = -0.0014f * (1.0e-2f * prev_RH + 1) * ((temperature / 320.0f) - 30.0f); // temperature compensation based on last humidity value
+  float dC = -0.0014f * (prev_RH) * ((temperature / 320.0f) - 30.0f); // temperature compensation based on last humidity value
   // now, we can calculate RH from the adjusted capacitance
-  float RH = ((dC * C_RH_pF) - C0) / (C0 * HC0);
+  float RH = ((C_RH_pF - dC) - C0) / (C0 * HC0);
 
   digitalWrite(PB12, LOW);
   pauseFrequencyMeasurement();
@@ -198,7 +205,7 @@ uint8_t getHumidityFormatted(int16_t temperature)
   }
   else if (RH > 125.0f)
   {
-    return (255);
+    return (252);
   }
   else
   {

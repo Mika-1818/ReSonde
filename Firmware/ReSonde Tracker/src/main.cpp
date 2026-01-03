@@ -67,6 +67,8 @@ void setup() {
   digitalWrite(PA11, HIGH); 
   */
 
+  pinMode(PB12, OUTPUT); // Pin to switch between reference capacitor and humidity sensor
+
   DEBUG_BEGIN(115200);
 
   // Setting up the Max M10S GNSS module
