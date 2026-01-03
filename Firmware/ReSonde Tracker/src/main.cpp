@@ -60,6 +60,13 @@ void fillPacket(){
 }
 
 void setup() {
+  /*
+  pinMode(PA10, OUTPUT);
+  pinMode(PA11, OUTPUT);
+  digitalWrite(PA10, HIGH);
+  digitalWrite(PA11, HIGH); 
+  */
+
   DEBUG_BEGIN(115200);
 
   // Setting up the Max M10S GNSS module
@@ -82,7 +89,7 @@ void setup() {
   SerialGNSS.begin(38400);
 
   if (GNSS.begin(SerialGNSS)) {
-    DEBUG_PRINTLN("GNSS started successfully!");
+    DEBUG_PRINTLN("GNSS started with higher baud rate successfully!");
   } else {
     DEBUG_PRINTLN("GNSS failed to start. ReSonde cannot work without GNSS. Going into panic loop.");
     panic();
