@@ -199,6 +199,8 @@ uint8_t getHumidityFormatted(int16_t temperature)
   digitalWrite(PB12, LOW);
   pauseFrequencyMeasurement();
 
+  prev_RH = RH;
+  
   if (RH < 0.0f)
   {
     return (0);

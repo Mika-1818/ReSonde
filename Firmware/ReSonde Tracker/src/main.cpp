@@ -113,6 +113,7 @@ void setup()
   GNSS.setNavigationFrequency(TX_RATE);
   GNSS.setAutoPVT(true);
   GNSS.setDynamicModel(DYN_MODEL_AIRBORNE1g);
+  GNSS.setLNAMode(SFE_UBLOX_LNA_MODE_BYPASS);
   GNSS.saveConfiguration();
 
   SetupTemperature();
