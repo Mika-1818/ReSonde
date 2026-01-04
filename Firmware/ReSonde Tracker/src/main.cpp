@@ -11,7 +11,8 @@ SFE_UBLOX_GNSS_SERIAL GNSS;
 
 bool fullPacket = false;
 
-struct __attribute__((packed)) Packet {
+struct __attribute__((packed)) Packet
+{
   uint16_t SN;
   uint16_t counter;
   uint32_t time;
@@ -25,21 +26,25 @@ struct __attribute__((packed)) Packet {
   int16_t temp;
   uint8_t rh;
   uint8_t battery;
-} packet;                                   // Main packet to be transmitted
+} packet; // Main packet to be transmitted
 
-void panic(){
-  while(true){
+void panic()
+{
+  while (true)
+  {
     DEBUG_PRINTLN("Fatal Error! Restarting in 1 Second...");
     delay(1000);
     NVIC_SystemReset();
   }
 }
 
-void initPacket(){
+void initPacket()
+{
   packet.SN = SERIAL_NUMBER;
 }
 
-void fillPacket(){
+void fillPacket()
+{
   packet.counter++;
   DEBUG_PRINTLN("Filling GPS stuff... ");
   packet.time = GNSS.getUnixEpoch();
@@ -59,12 +64,13 @@ void fillPacket(){
   fullPacket = true;
 }
 
-void setup() {
+void setup()
+{
   /*
   pinMode(PA10, OUTPUT);
   pinMode(PA11, OUTPUT);
   digitalWrite(PA10, HIGH);
-  digitalWrite(PA11, HIGH); 
+  digitalWrite(PA11, HIGH);
   */
 
   pinMode(PB12, OUTPUT); // Pin to switch between reference capacitor and humidity sensor
@@ -75,13 +81,16 @@ void setup() {
   DEBUG_PRINTLN("Attempting to start GNSS...");
   SerialGNSS.begin(9600);
 
-  if (GNSS.begin(SerialGNSS)) {
+  if (GNSS.begin(SerialGNSS))
+  {
     DEBUG_PRINTLN("GNSS started successfully!");
-  } else {
+  }
+  else
+  {
     DEBUG_PRINTLN("GNSS failed to start. ReSonde cannot work without GNSS. Going into panic loop.");
     panic();
   }
-  
+
   GNSS.setVal32(UBLOX_CFG_UART1_BAUDRATE, 38400, VAL_LAYER_RAM_BBR);
   GNSS.saveConfiguration();
   GNSS.end();
@@ -90,9 +99,12 @@ void setup() {
   SerialGNSS.end();
   SerialGNSS.begin(38400);
 
-  if (GNSS.begin(SerialGNSS)) {
+  if (GNSS.begin(SerialGNSS))
+  {
     DEBUG_PRINTLN("GNSS started with higher baud rate successfully!");
-  } else {
+  }
+  else
+  {
     DEBUG_PRINTLN("GNSS failed to start. ReSonde cannot work without GNSS. Going into panic loop.");
     panic();
   }
@@ -111,19 +123,26 @@ void setup() {
   initPacket();
 }
 
-void loop() {
-  if(transmittedFlag) {
+void loop()
+{
+  if (transmittedFlag)
+  {
     transmittedFlag = false;
     finishTransmission();
     DEBUG_PRINTLN("Transmission finished");
   }
-  
-  if (GNSS.getPVT()) {
+
+  if (GNSS.getPVT())
+  {
     DEBUG_PRINTLN("Got a GNSS packet!");
-    fillPacket();
+    if (GNSS.getSIV() > 5)
+    {
+      fillPacket();
+    }
   }
 
-  if(fullPacket) {
+  if (fullPacket)
+  {
     fullPacket = false;
     DEBUG_PRINTLN("Attempting to send packet...");
     startTX();

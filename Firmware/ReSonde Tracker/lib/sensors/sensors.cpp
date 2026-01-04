@@ -44,7 +44,7 @@ int16_t getFormattedTemperature()
 // ---- battery voltage measurement ----- //
 int8_t getFormattedBattVoltage()
 {
-  return (map(analogRead(PB2), 0, 4096, 0, 255)); // Read battery voltage on PB2 and convert for packet
+  return (map(analogRead(PB2), 0, 1024, 0, 255)); // Read battery voltage on PB2 and convert for packet
 }
 
 // ---- humidity measurement ----- //
