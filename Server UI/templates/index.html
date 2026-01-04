@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReSonde Dashboard</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path
+                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                        <path d="M2 12h20" />
+                    </svg>
+                    <span>ReSonde Dashboard</span>
+                </div>
+
+                <!-- Sonde Selector -->
+                <div class="sonde-selector">
+                    <label for="sondeSelect">Sonde:</label>
+                    <select id="sondeSelect">
+                        <option value="">-- Select Sonde --</option>
+                    </select>
+                    <button id="refreshSondes" class="btn-icon" title="Refresh list">🔄</button>
+                </div>
+            </div>
+            <div class="header-right">
+                <!-- Download Buttons -->
+                <div class="download-buttons">
+                    <button id="downloadCsv" class="btn-download" disabled>
+                        <span>📄</span> Download CSV
+                    </button>
+                    <button id="downloadSkewt" class="btn-download" disabled>
+                        <span>📊</span> Download Skew-T
+                    </button>
+                </div>
+                <div class="connection-status" id="connectionStatus">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Connecting...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Left Panel - Map -->
+            <section class="panel map-panel">
+                <div class="panel-header">
+                    <h2>📍 Flight Track</h2>
+                    <span class="panel-badge" id="trackPoints">0 points</span>
+                </div>
+                <div class="panel-content">
+                    <div id="map"></div>
+                    <div id="mapNoGps" class="map-overlay-status" style="display: none;">
+                        <span>⚠️ No GPS Fix</span>
+                    </div>
+                    <div id="mapNoSonde" class="map-overlay-info">
+                        <span>Select a sonde to view track</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel - Skew-T -->
+            <section class="panel skewt-panel">
+                <div class="panel-header">
+                    <h2>📊 Skew-T Log-P</h2>
+                    <span class="panel-badge" id="skewTStatus">Select a sonde</span>
+                </div>
+                <div class="panel-content">
+                    <div id="skewt-container">
+                        <img id="skewt-image" src="" alt="Skew-T Diagram" style="display: none;">
+                        <div id="skewt-placeholder">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <path d="M3 3v18h18" />
+                                <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
+                            </svg>
+                            <p>Select a sonde to view Skew-T</p>
+                            <span>Diagram updates with new data</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Telemetry Strip -->
+        <footer class="telemetry-strip">
+            <!-- Serial Number -->
+            <div class="telemetry-box" id="box-sn">
+                <div class="box-label">SERIAL NO</div>
+                <div class="box-value" id="val-sn">--</div>
+            </div>
+
+            <!-- Packet Number -->
+            <div class="telemetry-box" id="box-pkt">
+                <div class="box-label">PACKET #</div>
+                <div class="box-value" id="val-pkt">--</div>
+            </div>
+
+            <!-- Time -->
+            <div class="telemetry-box" id="box-time">
+                <div class="box-label">TIME</div>
+                <div class="box-value" id="val-time">--:--:--</div>
+            </div>
+
+            <!-- Latitude -->
+            <div class="telemetry-box" id="box-lat">
+                <div class="box-label">LATITUDE</div>
+                <div class="box-value" id="val-lat">--°</div>
+            </div>
+
+            <!-- Longitude -->
+            <div class="telemetry-box" id="box-lon">
+                <div class="box-label">LONGITUDE</div>
+                <div class="box-value" id="val-lon">--°</div>
+            </div>
+
+            <!-- Altitude -->
+            <div class="telemetry-box" id="box-alt">
+                <div class="box-label">ALTITUDE</div>
+                <div class="box-value" id="val-alt">-- m</div>
+            </div>
+
+            <!-- Ascent Rate -->
+            <div class="telemetry-box" id="box-ascent">
+                <div class="box-label">ASCENT RATE</div>
+                <div class="box-value" id="val-ascent">-- m/s</div>
+            </div>
+
+            <!-- Satellites -->
+            <div class="telemetry-box" id="box-sats">
+                <div class="box-label">SATELLITES</div>
+                <div class="box-value" id="val-sats">--</div>
+            </div>
+
+            <!-- Temperature -->
+            <div class="telemetry-box" id="box-temp">
+                <div class="box-label">TEMPERATURE</div>
+                <div class="box-value" id="val-temp">-- °C</div>
+            </div>
+
+            <!-- Humidity -->
+            <div class="telemetry-box" id="box-rh">
+                <div class="box-label">HUMIDITY</div>
+                <div class="box-value" id="val-rh">-- %</div>
+            </div>
+
+            <!-- Pressure -->
+            <div class="telemetry-box" id="box-pressure">
+                <div class="box-label">PRESSURE</div>
+                <div class="box-value" id="val-pressure">-- hPa</div>
+            </div>
+
+            <!-- Battery Voltage -->
+            <div class="telemetry-box" id="box-battery">
+                <div class="box-label">BATTERY</div>
+                <div class="box-value" id="val-battery">-- V</div>
+            </div>
+
+            <!-- Last Packet -->
+            <div class="telemetry-box" id="box-lastpkt">
+                <div class="box-label">LAST PACKET</div>
+                <div class="box-value" id="val-lastpkt">-- s</div>
+            </div>
+
+            <!-- RSSI -->
+            <div class="telemetry-box" id="box-rssi">
+                <div class="box-label">RSSI</div>
+                <div class="box-value" id="val-rssi">-- dBm</div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+
+</html>

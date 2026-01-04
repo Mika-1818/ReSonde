@@ -5,6 +5,9 @@
 #include <Adafruit_SSD1306.h>
 #include <RadioLib.h>
 
+#include <WiFi.h>
+#include <HTTPClient.h>
+
 
 // OLED display definitions
 #define SCREEN_WIDTH 128
@@ -21,6 +24,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define LORA_SYNC_WORD      0x12
 #define TX_POWER            2      // tx power in dBm, neccesary but not relevant
 #define LORA_PREAMBLE_LENGTH 8      // symbols
+
+const char* serverUrl = "https://dashboard.resonde.de/api/upload";
 
 
 struct __attribute__((packed)) Packet {
@@ -98,6 +103,34 @@ void printPacket() {
   Serial.println(radio.getRSSI());
 }
 
+void uploadTelemetry() {
+    HTTPClient http;
+    http.begin(serverUrl);
+    http.addHeader("Content-Type", "application/json");
+    
+    // Build JSON payload matching the expected format
+    String payload = "{";
+    payload += "\"sn\":" + String(packet.SN) + ",";
+    payload += "\"counter\":" + String(packet.counter) + ",";
+    payload += "\"time\":" + String(packet.time) + ",";
+    payload += "\"lat\":" + String(packet.lat) + ",";
+    payload += "\"lon\":" + String(packet.lon) + ",";
+    payload += "\"alt\":" + String(packet.alt) + ",";
+    payload += "\"vSpeed\":" + String(packet.vSpeed) + ",";
+    payload += "\"eSpeed\":" + String(packet.eSpeed) + ",";
+    payload += "\"nSpeed\":" + String(packet.nSpeed) + ",";
+    payload += "\"sats\":" + String(packet.sats) + ",";
+    payload += "\"temp\":" + String(packet.temp) + ",";
+    payload += "\"rh\":" + String(packet.rh) + ",";
+    payload += "\"battery\":" + String(packet.battery) + ",";
+    payload += "\"rssi\":" + String(radio.getRSSI());
+    payload += "}";
+    
+    int httpCode = http.POST(payload);
+    http.end();
+}
+
+
 void setup() {
   Serial.begin(115200);
 
@@ -116,6 +149,13 @@ void setup() {
   display.println("ReSonde Receiver");
   display.display();
 
+  WiFi.begin("your_ssid", "your_password");
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println(" connected!");
 
   // Setup for SX1278 LoRa
 
@@ -159,6 +199,7 @@ void loop() {
       digitalWrite(LED, LOW);
       updateDisplay();
       printPacket();
+      uploadTelemetry();
     }
   }
 }
