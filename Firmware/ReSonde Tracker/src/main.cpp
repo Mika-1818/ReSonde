@@ -136,7 +136,7 @@ void loop()
   if (GNSS.getPVT())
   {
     DEBUG_PRINTLN("Got a GNSS packet!");
-    if (GNSS.getSIV() > 5)
+    if (GNSS.getSIV() > 8)
     {
       fillPacket();
     }

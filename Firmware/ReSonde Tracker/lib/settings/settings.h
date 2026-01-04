@@ -4,8 +4,8 @@
 #define CR      8       // Coding Rate
 #define SW   RADIOLIB_SX126X_SYNC_WORD_PRIVATE // Sync Word
 #define PL  8      // Preamble length
-#define TX_PWR       14      // Transmission power in dBm
+#define TX_PWR       10      // Transmission power in dBm
 
-#define SERIAL_NUMBER 1
+#define SERIAL_NUMBER 12345
 
 #define TX_RATE 1 // How many times per second to transmit a packet

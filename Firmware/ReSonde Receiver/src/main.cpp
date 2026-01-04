@@ -15,9 +15,9 @@
 #define OLED_RESET -1
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-#define LED 25
+#define LED 25 // LED pin
 
-#define FREQUENCY           434.0   // MHz
+#define FREQUENCY           434.0   // MHz      LoRa settings. Leave like this to work with ReSonde
 #define LORA_SPREADING_FACTOR 9
 #define LORA_BANDWIDTH      62.5   // kHz
 #define LORA_CODING_RATE    8       // 4/8
@@ -28,7 +28,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 const char* serverUrl = "https://dashboard.resonde.de/api/upload";
 
 
-struct __attribute__((packed)) Packet {
+struct __attribute__((packed)) Packet { // see printPacket() for field descriptions
   uint16_t SN;
   uint16_t counter;
   uint32_t time;
@@ -46,8 +46,8 @@ struct __attribute__((packed)) Packet {
 
 
 
-SX1278 radio = new Module(18, 26, 23, -1);
-volatile bool receivedFlag = false;
+SX1278 radio = new Module(18, 26, 23, -1); // LoRa(sx1278) module (CS, IRQ, RST, GPIO), works fine with ttgo V2
+volatile bool receivedFlag = false; // goes true when a packet is received
 
 ICACHE_RAM_ATTR
 void setFlag(void) {
@@ -87,19 +87,19 @@ void updateDisplay() {
 }
 
 void printPacket() {
-  Serial.print(packet.SN); Serial.print(", ");
-  Serial.print(packet.counter); Serial.print(", ");
-  Serial.print(packet.time); Serial.print(", ");
-  Serial.print(packet.lat); Serial.print(", ");
-  Serial.print(packet.lon); Serial.print(", ");
-  Serial.print(packet.alt); Serial.print(", ");
-  Serial.print(packet.vSpeed); Serial.print(", ");
-  Serial.print(packet.eSpeed); Serial.print(", ");
-  Serial.print(packet.nSpeed); Serial.print(", ");
-  Serial.print(packet.sats); Serial.print(", ");
-  Serial.print(packet.temp); Serial.print(", ");
-  Serial.print(packet.rh); Serial.print(", ");
-  Serial.print(packet.battery); Serial.print(", ");
+  Serial.print(packet.SN); Serial.print(", "); // Serial Number
+  Serial.print(packet.counter); Serial.print(", "); // Packet counter
+  Serial.print(packet.time); Serial.print(", "); // Time in unix code
+  Serial.print(packet.lat); Serial.print(", "); // Latitude, e-7 to get standard format
+  Serial.print(packet.lon); Serial.print(", "); // Longitude, e-7 to get standard format
+  Serial.print(packet.alt); Serial.print(", "); // Altitude, in mm
+  Serial.print(packet.vSpeed); Serial.print(", "); // Vertical speed, in cm/s
+  Serial.print(packet.eSpeed); Serial.print(", "); // East speed, in cm/s
+  Serial.print(packet.nSpeed); Serial.print(", "); // North speed, in cm/s
+  Serial.print(packet.sats); Serial.print(", "); // Number of satellites
+  Serial.print(packet.temp); Serial.print(", "); // Temperature, in /320 to get C
+  Serial.print(packet.rh); Serial.print(", "); // Relative humidity, /2 to get %
+  Serial.print(packet.battery); Serial.print(", "); // battery voltage, (battery*3.3)/255 to get V
   Serial.println(radio.getRSSI());
 }
  /*
@@ -161,7 +161,8 @@ void setup() {
   // Setup for SX1278 LoRa
 
   SPI.begin(5,19,27,18); // SCK, MISO, MOSI, SS
-  Serial.print(F("[SX1278] Initializing ... "));
+
+  Serial.print(F("[SX1278] Initializing ... ")); // Initialize LoRa module
   int state = radio.begin(FREQUENCY, LORA_BANDWIDTH, LORA_SPREADING_FACTOR, LORA_CODING_RATE, LORA_SYNC_WORD, TX_POWER, LORA_PREAMBLE_LENGTH);
   if (state == RADIOLIB_ERR_NONE) {
     Serial.println(F("success!"));
@@ -171,9 +172,9 @@ void setup() {
     while (true) { delay(10); }
   }
 
-  radio.setPacketReceivedAction(setFlag);
+  radio.setPacketReceivedAction(setFlag); // set interrupt function when packet is received
 
-  Serial.print(F("[SX1278] Starting to listen ... "));
+  Serial.print(F("[SX1278] Starting to listen ... ")); //Set up radio to receive mode
   state = radio.startReceive();
   if (state == RADIOLIB_ERR_NONE) {
     Serial.println(F("success!"));
@@ -197,9 +198,9 @@ void loop() {
     if(state == RADIOLIB_ERR_NONE) {
       digitalWrite(LED, HIGH);
       delay(30);
-      digitalWrite(LED, LOW);
-      updateDisplay();
-      printPacket();
+      digitalWrite(LED, LOW); // blink LED to show packet was received
+      updateDisplay(); // print data on OLED
+      printPacket(); // print data on Serial port (USB)
       //uploadTelemetry();
     }
   }
