@@ -102,7 +102,7 @@ void printPacket() {
   Serial.print(packet.battery); Serial.print(", "); // battery voltage, (battery*3.3)/255 to get V
   Serial.println(radio.getRSSI());
 }
- /*
+
 void uploadTelemetry() {
     HTTPClient http;
     http.begin(serverUrl);
@@ -129,7 +129,7 @@ void uploadTelemetry() {
     int httpCode = http.POST(payload);
     http.end();
 }
-*/
+
 
 void setup() {
   Serial.begin(115200);
@@ -149,15 +149,15 @@ void setup() {
   display.println("ReSonde Receiver");
   display.display();
 
-  /*
-  WiFi.begin("SSID", "Password");
+  
+  WiFi.begin("SSID", "PASSWORD");
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
   Serial.println(" connected!");
-*/
+
   // Setup for SX1278 LoRa
 
   SPI.begin(5,19,27,18); // SCK, MISO, MOSI, SS
@@ -201,7 +201,7 @@ void loop() {
       digitalWrite(LED, LOW); // blink LED to show packet was received
       updateDisplay(); // print data on OLED
       printPacket(); // print data on Serial port (USB)
-      //uploadTelemetry();
+      uploadTelemetry();
     }
   }
 }
