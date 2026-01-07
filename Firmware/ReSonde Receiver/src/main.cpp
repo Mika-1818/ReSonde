@@ -196,12 +196,11 @@ void loop() {
     int state = radio.readData((uint8_t*)&packet, sizeof(packet)); // read data from receiver and put into packet struct
 
     if(state == RADIOLIB_ERR_NONE) {
-      digitalWrite(LED, HIGH);
-      delay(30);
-      digitalWrite(LED, LOW); // blink LED to show packet was received
+      digitalWrite(LED, HIGH); // turning on LED to indicate packet was received
       updateDisplay(); // print data on OLED
       printPacket(); // print data on Serial port (USB)
       uploadTelemetry();
+      digitalWrite(LED, LOW); // turn off LED after processing and uploading the received packet
     }
   }
 }
