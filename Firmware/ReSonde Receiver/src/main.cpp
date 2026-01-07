@@ -9,6 +9,11 @@
 #include <HTTPClient.h>
 
 
+////// CHANGE THESE VALUES TO YOUR WIFI CREDENTIALS //////
+#define SSID "Your_SSID"         // replace with your WiFi SSID
+#define PASSWORD "Your_PASSWORD" // replace with your WiFi password
+
+
 // OLED display definitions
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -150,7 +155,7 @@ void setup() {
   display.display();
 
   
-  WiFi.begin("SSID", "PASSWORD");
+  WiFi.begin(SSID, PASSWORD);
   Serial.print("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
