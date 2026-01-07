@@ -17,7 +17,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 #define LED 25 // LED pin
 
-#define FREQUENCY           434.0   // MHz      LoRa settings. Leave like this to work with ReSonde
+#define FREQUENCY           434.6   // MHz      LoRa settings. Leave like this to work with ReSonde
 #define LORA_SPREADING_FACTOR 9
 #define LORA_BANDWIDTH      62.5   // kHz
 #define LORA_CODING_RATE    8       // 4/8

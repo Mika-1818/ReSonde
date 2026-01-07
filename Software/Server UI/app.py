@@ -13,6 +13,7 @@ import time
 import json
 from pathlib import Path
 from datetime import datetime
+from collections import deque
 
 import numpy as np
 import pandas as pd
@@ -172,13 +173,22 @@ def process_upload(raw_data):
     if sn not in sonde_state:
         sonde_state[sn] = {
             'last_pressure': GROUND_PRESSURE,
-            'last_altitude': 0
+            'last_altitude': 0,
+            'recent_packets': deque(maxlen=50)  # Track last 50 packets for deduplication
         }
     
     state = sonde_state[sn]
     
     # Parse raw values (same conversions as local version)
     packet_counter = int(raw_data['counter'])
+    
+    # Deduplication: Check if we've already processed this packet
+    if packet_counter in state['recent_packets']:
+        print(f"[SN {sn}] Duplicate packet #{packet_counter} ignored")
+        return None
+        
+    state['recent_packets'].append(packet_counter)
+    
     unix_time = int(raw_data['time'])
     lat = float(raw_data['lat']) * 1e-7
     lon = float(raw_data['lon']) * 1e-7
@@ -252,6 +262,14 @@ def generate_skewt(sn):
     from metpy.plots import SkewT
     from metpy.units import units
     
+    csv_path = get_csv_path(sn)
+    skewt_path = get_skewt_path(sn)
+    
+    # Optimization: Check if Skew-T is already up to date
+    if csv_path.exists() and skewt_path.exists():
+        if skewt_path.stat().st_mtime >= csv_path.stat().st_mtime:
+            return str(skewt_path)
+
     df = load_sonde_data(sn)
     if df is None or len(df) < 5:
         return None
@@ -329,6 +347,9 @@ def api_upload():
                 return jsonify({'error': f'Missing field: {field}'}), 400
         
         processed = process_upload(data)
+        
+        if processed is None:
+            return jsonify({'success': True, 'status': 'duplicate'}), 200
         
         # Broadcast to all connected WebSocket clients
         socketio.emit('telemetry', processed)

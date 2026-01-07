@@ -1,4 +1,4 @@
-#define FREQ      434.0   // Frequency in MHz
+#define FREQ      434.6   // Frequency in MHz
 #define BW      62.5   // Bandwidth in kHz
 #define SF      9       // Spreading Factor
 #define CR      8       // Coding Rate
@@ -6,6 +6,6 @@
 #define PL  8      // Preamble length
 #define TX_PWR       10      // Transmission power in dBm
 
-#define SERIAL_NUMBER 12345
+#define SERIAL_NUMBER 0 // Set to 0 for testing purposes
 
 #define TX_RATE 1 // How many times per second to transmit a packet
