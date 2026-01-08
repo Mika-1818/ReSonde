@@ -88,6 +88,11 @@ void updateDisplay() {
   display.print(" | "); display.print(packet.rh * 0.5f); display.println("%");
   display.print("Batt: "); display.print((packet.battery * 3.3f) / 255.0f); display.println(" V");
   display.print("RSSI: "); display.print(radio.getRSSI()); display.println("dBm");
+  if(WiFi.status() == WL_CONNECTED){
+    display.println("WiFi connected!");
+  } else {
+    display.println("WiFi NOT connected!");
+  }
   display.display();
 }
 
@@ -157,11 +162,23 @@ void setup() {
   
   WiFi.begin(SSID, PASSWORD);
   Serial.print("Connecting to WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
+
+  unsigned long startAttemptTime = millis();
+  const unsigned long wifiTimeout = 30000; // 30 seconds
+
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < wifiTimeout) {
     delay(500);
     Serial.print(".");
   }
-  Serial.println(" connected!");
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println(" connected!");
+    display.println("WiFi connected!");
+  } else {
+    Serial.println(" failed!");
+    display.println("WiFi NOT connected!");
+  }
+
 
   // Setup for SX1278 LoRa
 
@@ -184,12 +201,13 @@ void setup() {
   if (state == RADIOLIB_ERR_NONE) {
     Serial.println(F("success!"));
     display.println("Receiving!");
-    display.display();
   } else {
     Serial.print(F("failed, code "));
     Serial.println(state);
     while (true) { delay(10); }
   }
+
+  display.display();
 
 }
 
@@ -204,7 +222,9 @@ void loop() {
       digitalWrite(LED, HIGH); // turning on LED to indicate packet was received
       updateDisplay(); // print data on OLED
       printPacket(); // print data on Serial port (USB)
-      uploadTelemetry();
+      if(WiFi.status() == WL_CONNECTED){
+        uploadTelemetry();
+      }
       digitalWrite(LED, LOW); // turn off LED after processing and uploading the received packet
     }
   }
