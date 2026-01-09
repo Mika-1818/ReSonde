@@ -21,10 +21,22 @@ import pandas as pd
 from flask import Flask, render_template, jsonify, request, send_file, send_from_directory
 from flask_socketio import SocketIO, emit
 
+import logging
+
 # === CONFIGURATION ===
+BASE_DIR = Path(__file__).resolve().parent
 GROUND_PRESSURE = 1013.25  # hPa - default sea level pressure
-GROUND_PRESSURE_FILE = Path("ground_pressure.json")
-DATA_DIR = Path("data")
+GROUND_PRESSURE_FILE = BASE_DIR / "ground_pressure.json"
+DATA_DIR = BASE_DIR / "data"
+LOG_FILE = BASE_DIR / "server.log"
+
+# Setup logging
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logging.info("Server starting up...")
 
 # Flask app setup
 app = Flask(__name__)
@@ -90,7 +102,7 @@ def get_configured_ground_pressure(sn):
                 config = json.load(f)
                 return float(config.get(str(sn), GROUND_PRESSURE))
     except Exception as e:
-        print(f"Error reading ground pressure config: {e}")
+        logging.error(f"Error reading ground pressure config: {e}")
     return GROUND_PRESSURE
 
 
@@ -198,7 +210,7 @@ def process_upload(raw_data):
     
     # Deduplication: Check if we've already processed this packet
     if packet_counter in state['recent_packets']:
-        print(f"[SN {sn}] Duplicate packet #{packet_counter} ignored")
+        logging.info(f"[SN {sn}] Duplicate packet #{packet_counter} ignored")
         return None
         
     state['recent_packets'].append(packet_counter)
@@ -342,8 +354,9 @@ def generate_skewt(sn):
         plt.close(fig)
         
         return str(filepath)
+
     except Exception as e:
-        print(f"Error generating Skew-T: {e}")
+        logging.error(f"Error generating Skew-T: {e}")
         return None
 
 
@@ -382,12 +395,12 @@ def api_upload():
         # Broadcast to all connected WebSocket clients
         socketio.emit('telemetry', processed)
         
-        print(f"[SN {processed['serial_number']}] Pkt #{processed['packet_counter']} | Alt: {processed['alt_m']:.1f}m")
+        logging.info(f"[SN {processed['serial_number']}] Pkt #{processed['packet_counter']} | Alt: {processed['alt_m']:.1f}m")
         
         return jsonify({'success': True, 'processed': processed}), 200
         
     except Exception as e:
-        print(f"Upload error: {e}")
+        logging.error(f"Upload error: {e}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -459,20 +472,20 @@ def api_download_skewt(sn):
 
 @socketio.on('connect')
 def handle_connect():
-    print('Client connected')
+    logging.info('Client connected')
     emit('status', {'connected': True, 'sondes': get_all_sondes()})
 
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print('Client disconnected')
+    logging.info('Client disconnected')
 
 
 @socketio.on('subscribe_sonde')
 def handle_subscribe(data):
     """Client wants updates for a specific sonde."""
     sn = data.get('sn')
-    print(f'Client subscribed to sonde {sn}')
+    logging.info(f'Client subscribed to sonde {sn}')
 
 
 # === MAIN ===
@@ -482,6 +495,6 @@ if __name__ == '__main__':
     
     print("Starting Radiosonde Multi-Receiver Server...")
     print("Open http://localhost:5000 in your browser")
-    print("ESP32 upload endpoint: POST http://localhost:5000/api/upload")
+    print(f"Logging to {LOG_FILE}")
     
     socketio.run(app, host='0.0.0.0', port=5000, debug=False)
