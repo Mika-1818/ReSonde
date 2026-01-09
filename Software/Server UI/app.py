@@ -220,7 +220,7 @@ def process_upload(raw_data):
     lon = float(raw_data['lon']) * 1e-7
     alt_m = float(raw_data['alt']) / 1000.0
     
-    vspeed_ms = -float(raw_data['vSpeed']) / 100.0
+    vspeed_ms = float(raw_data['vSpeed']) / 100.0
     espeed_ms = float(raw_data['eSpeed']) / 100.0
     nspeed_ms = float(raw_data['nSpeed']) / 100.0
     
