@@ -1,0 +1,4 @@
+// This list contains all IDs that are associated with a ham radio callsign
+
+0: test
+1-10: DL0HAB
