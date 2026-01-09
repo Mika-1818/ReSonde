@@ -23,6 +23,7 @@ from flask_socketio import SocketIO, emit
 
 # === CONFIGURATION ===
 GROUND_PRESSURE = 1013.25  # hPa - default sea level pressure
+GROUND_PRESSURE_FILE = Path("ground_pressure.json")
 DATA_DIR = Path("data")
 
 # Flask app setup
@@ -79,6 +80,18 @@ def calculate_theta_e(temp_c, pressure, rh):
     w = calculate_mixing_ratio(temp_c, pressure, rh) / 1000
     theta = temp_k * (1000.0 / pressure) ** 0.2854
     return theta * np.exp((2.5e6 * w) / (1004 * temp_k))
+
+
+def get_configured_ground_pressure(sn):
+    """Get ground pressure for a sonde from config file."""
+    try:
+        if GROUND_PRESSURE_FILE.exists():
+            with open(GROUND_PRESSURE_FILE, 'r') as f:
+                config = json.load(f)
+                return float(config.get(str(sn), GROUND_PRESSURE))
+    except Exception as e:
+        print(f"Error reading ground pressure config: {e}")
+    return GROUND_PRESSURE
 
 
 # === DATA MANAGEMENT ===
@@ -171,8 +184,9 @@ def process_upload(raw_data):
     
     # Initialize sonde state if new
     if sn not in sonde_state:
+        start_pressure = get_configured_ground_pressure(sn)
         sonde_state[sn] = {
-            'last_pressure': GROUND_PRESSURE,
+            'last_pressure': start_pressure,
             'last_altitude': 0,
             'recent_packets': deque(maxlen=50)  # Track last 50 packets for deduplication
         }
@@ -206,7 +220,7 @@ def process_upload(raw_data):
     
     # Calculate pressure
     if state['last_altitude'] == 0:
-        pressure_hpa = GROUND_PRESSURE
+        pressure_hpa = get_configured_ground_pressure(sn)
     else:
         pressure_hpa = calculate_exact_pressure(
             alt_m, state['last_altitude'], state['last_pressure'], temp_c, rh_percent
@@ -276,6 +290,20 @@ def generate_skewt(sn):
     
     # Filter first 5 packets
     df = df.iloc[5:]
+    if len(df) < 2:
+        return None
+
+    # Filter for ascent only: use data up to the maximum altitude
+    max_alt_idx = df['alt_m'].idxmax()
+    # Need to be careful if idxmax returns a label index vs integer location, 
+    # but with default pandas index they are usually aligned if not manipulated.
+    # To be safe with iloc, we finding the integer position.
+    
+    # Reset index to be safe for finding the max position
+    df_reset = df.reset_index(drop=True)
+    max_pos = df_reset['alt_m'].idxmax()
+    df = df_reset.iloc[:max_pos+1]
+
     if len(df) < 2:
         return None
     
